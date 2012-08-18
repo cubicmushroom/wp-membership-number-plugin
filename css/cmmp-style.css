@@ -1,0 +1,20 @@
+./* For modern browsers */
+.clearfix:before,
+.clearfix:after {content:""; display:table;}
+.clearfix:after {clear:both;}
+/* For IE 6/7 (trigger hasLayout) */
+.clearfix {*zoom:1;}
+
+
+#available-nos #add-membership-nos-form {
+  float: left;
+  width: 180px;
+}
+#available-nos ul {
+  float: left;
+  margin-left: 200px;
+}
+#available-nos ul li {
+  float: left;
+  width: 180px;
+}
