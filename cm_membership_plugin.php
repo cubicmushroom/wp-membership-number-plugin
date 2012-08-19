@@ -45,6 +45,12 @@ class CMMembershipPlugin
   const USER_MEMBERSHIP_STARTED_ON_META_KEY = 'cmmp_membership_started';
 
   /**
+   * Property used to store whether the membership no entered was OK when saving user's profile
+   * @var     bool
+   */
+  private $membership_no_not_available;
+
+  /**
    * Property to store the actual table name
    * @var     string
    */
@@ -120,8 +126,14 @@ class CMMembershipPlugin
     add_action('admin_enqueue_scripts', array($this, 'admin_scripts'));
 
     add_action('register_form', array($this, 'add_member_no_to_registration_form'));
-    add_action('register_post', array($this, 'check_registration_fields'), 10, 3);
+    add_action('registration_errors', array($this, 'check_registration_fields'), 10, 3);
     add_action('user_register', array($this, 'save_membership_no_after_registration'));
+    // Add membership fields to profile page
+    add_action('show_user_profile', array($this, 'add_member_no_to_profile_form'), 1);
+    add_action('edit_user_profile', array($this, 'add_member_no_to_profile_form'), 1);
+    add_action('personal_options_update', array($this, 'save_member_no_profile_field'));
+    add_action('edit_user_profile_update', array($this, 'save_member_no_profile_field'));
+    add_action('user_profile_update_errors', array($this, 'check_profile_update_fields'), 10, 3);
 
   }
 
@@ -153,7 +165,7 @@ class CMMembershipPlugin
   {
     // Check user's permissions
     if (!current_user_can('edit_users'))
-      wp_die(__('Permission xdenied'));
+      wp_die(__('Permission denied'));
 
     // Get numbers from d/b
     $this->get_available_nos();
@@ -241,7 +253,7 @@ class CMMembershipPlugin
 
     // Check user's permissions
     if (!current_user_can('edit_users'))
-      wp_die(__('Permission rdenied'));
+      wp_die(__('Permission denied'));
 
     // Have we been asked to generate more numbers?
     if (!empty($_POST['no_to_generate']) && (int)$_POST['no_to_generate'] > 0
@@ -341,7 +353,7 @@ class CMMembershipPlugin
   {
     echo $this->number_field();
   }
-  function check_registration_fields($login, $email, $errors)
+  function check_registration_fields($errors, $login, $email)
   {
     if (!empty($_POST['cmmp']['membership_no']))
     {
@@ -350,6 +362,7 @@ class CMMembershipPlugin
         $errors->add('membership_no_not_availabled',
             '<strong>ERROR</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
     }
+    return $errors;
   }
   function save_membership_no_after_registration($user_id, $password='', $meta=array())
   {
@@ -358,12 +371,51 @@ class CMMembershipPlugin
       $this->assign_membership_no_to_user($user_id, $_POST['cmmp']['membership_no']);
     }
   }
+  function add_member_no_to_profile_form($user)
+  {
+    ?>
+    <h3><?php _e('Membership Details', 'CMMP'); ?></h3>
+    <table class="form-table">
+      <tr>
+        <th><label for="description"><?php echo $this->number_field_label(); ?></label></th>
+        <td><?php echo $this->number_field_input($user->ID); ?></td>
+      </tr>
+    </table>
+    <?php
+  }
+  function save_member_no_profile_field($user_id)
+  {
+    // Check current user is allowed to edit this user
+    if (!current_user_can('edit_user', $user_id))
+      return false;
+
+    // Check we have a valid membership no
+    if (!empty($_POST['cmmp']['membership_no']))
+    {
+      $no_available = $this->check_number_is_available($_POST['cmmp']['membership_no']);
+      if (!$no_available)
+      {
+        $this->membership_no_not_available = true;
+      }
+      else
+      {
+        $this->assign_membership_no_to_user($user_id, $_POST['cmmp']['membership_no']);
+      }
+    }
+  }
+  function check_profile_update_fields($errors, $update, $user)
+  {
+    if (!empty($this->membership_no_not_available))
+      $errors->add('membership_no_not_availabled',
+          '<strong>ERROR</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
+  }
 
 
 
 
   function assign_membership_no_to_user($user_id, $membership_no)
   {
+    $membership_no = str_replace(' ', '', $membership_no);
     // Add the membership no to the user
     update_usermeta($user_id, self::USER_MEMBERSHIP_NO_META_KEY, $membership_no);
     update_usermeta($user_id, self::USER_MEMBERSHIP_STARTED_ON_META_KEY, date('Y-m-d'));
@@ -381,15 +433,31 @@ class CMMembershipPlugin
     return chunk_split($no, 4, ' ');
   }
 
-  function number_field()
+  function number_field($user_id = false)
   {
-    $format = <<<HTML
-<p>
-  <label for="cmmp_membership_no">%s</label>
-  <input id="cmmp_membership_no" class="input" name="cmmp[membership_no]" type="text" size="40" />
-</p>
-HTML;
-    return sprintf($format, __('Membership no.', 'cmmp'));
+    $format = '<p>%s%s</p>';
+    return sprintf($format, $this->number_field_label(), $this->number_field_input($user_id));
+  }
+  function number_field_label()
+  {
+    return sprintf('<label for="cmmp_membership_no">%s</label>', __('Membership no.', 'cmmp'));
+  }
+  function number_field_input($user_id = false)
+  {
+    if (!empty($user_id))
+      $membership_no = get_user_meta($user_id, self::USER_MEMBERSHIP_NO_META_KEY, true);
+    if (empty($membership_no))
+    {
+      $membership_no = !empty($_REQUEST['cmmp']['membership_no']) ? stripslashes($_REQUEST['cmmp']['membership_no']) : '';
+      $html = sprintf('<input id="cmmp_membership_no" class="input" name="cmmp[membership_no]" type="text" size="40" value="%s" />',
+        $membership_no
+      );
+    }
+    else
+    {
+      $html = sprintf('<span id="cmmp_membership_no">%s</span>', $this->format_no($membership_no));
+    }
+    return $html;
   }
 
 }
