@@ -13,3 +13,15 @@ Uninstall
 ---------
 
 On un-install, the plugin drops the `cm_membership_plugin` table.
+
+
+
+
+
+
+
+Roadmap
+-------
+
+1. Add 
+1. Update to add capability to edit membership numbers (currently just admins can edit after initial save

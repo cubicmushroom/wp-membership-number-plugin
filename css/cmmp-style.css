@@ -6,15 +6,9 @@
 .clearfix {*zoom:1;}
 
 
-#available-nos #add-membership-nos-form {
-  float: left;
-  width: 180px;
+#member-nos-tabs ul.membership-no-list {
 }
-#available-nos ul {
+#member-nos-tabs ul.membership-no-list li {
   float: left;
-  margin-left: 200px;
-}
-#available-nos ul li {
-  float: left;
-  width: 180px;
+  width: 230px;
 }
