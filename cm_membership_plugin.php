@@ -430,7 +430,7 @@ class CMMembershipPlugin
 
 
   function format_no($no) {
-    return chunk_split($no, 4, ' ');
+    return chunk_split(str_replace(' ', '', $no), 4, ' ');
   }
 
   function number_field($user_id = false)
@@ -446,9 +446,9 @@ class CMMembershipPlugin
   {
     if (!empty($user_id))
       $membership_no = get_user_meta($user_id, self::USER_MEMBERSHIP_NO_META_KEY, true);
-    if (empty($membership_no))
+    if (current_user_can('create_users') || empty($membership_no))
     {
-      $membership_no = !empty($_REQUEST['cmmp']['membership_no']) ? stripslashes($_REQUEST['cmmp']['membership_no']) : '';
+      $membership_no = !empty($_REQUEST['cmmp']['membership_no']) ? stripslashes($_REQUEST['cmmp']['membership_no']) : $this->format_no($membership_no);
       $html = sprintf('<input id="cmmp_membership_no" class="input" name="cmmp[membership_no]" type="text" size="40" value="%s" />',
         $membership_no
       );
