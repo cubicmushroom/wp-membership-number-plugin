@@ -421,17 +421,19 @@ class CMMembershipPlugin
   }
   function check_registration_fields($errors, $login, $email)
   {
-    if (!empty($_POST['cmmp']['membership_no']))
+    $membership_no = trim($_POST['cmmp']['membership_no']);
+    if (!empty($membership_no))
     {
       $no_available = $this->check_number_is_available($_POST['cmmp']['membership_no']);
       if (!$no_available)
         $errors->add('membership_no_not_availabled',
-            '<strong>ERROR</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
+            '<strong>ERROR 1</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
     }
     return $errors;
   }
   function save_membership_no_after_registration($user_id, $password='', $meta=array())
   {
+
     if (!empty($_POST['cmmp']['membership_no']))
     {
       $this->assign_membership_no_to_user($user_id, $_POST['cmmp']['membership_no']);
@@ -482,7 +484,7 @@ class CMMembershipPlugin
   {
     if (!empty($this->membership_no_not_available))
       $errors->add('membership_no_not_availabled',
-          '<strong>ERROR</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
+          '<strong>ERROR 2</strong>: Sorry, but this is not a valid membership number.  Please try again.'); 
   }
   function assign_membership_no_to_user($user_id, $membership_no)
   {
@@ -559,7 +561,7 @@ class CMMembershipPlugin
   }
   function number_field_label()
   {
-    return sprintf('<label for="cmmp_membership_no">%s</label>', __('Membership no.', 'cmmp'));
+    return sprintf('<label for="cmmp_membership_no">%s</label>', __('Membership no. (if you have one)', 'cmmp'));
   }
   function number_field_input($user_id = false)
   {
